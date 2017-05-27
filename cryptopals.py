@@ -5,6 +5,9 @@ import binascii
 def byte_array():
     return array.array('B')
 
+def ascii_to_bytes(ascii):
+    return bytearray(ascii)
+
 def hex_to_bytes(hex):
     return array.array('B', hex.decode('hex'))
 
@@ -26,10 +29,13 @@ def bytes_to_base64(bytes):
 def bytes_to_ascii(bytes):
     return binascii.b2a_qp(bytes)
 
+def xor_byte_byte(byte_1, byte_2):
+    return byte_1 ^ byte_2
+
 def xor_byte_bytes(byte, bytes):
     result = byte_array()
     for b in bytes: 
-        result_byte = byte ^ b
+        result_byte = xor_byte_byte(byte, b)
         result.append(result_byte)
 
     return result
@@ -37,7 +43,7 @@ def xor_byte_bytes(byte, bytes):
 def xor_bytes_bytes(bytes_1, bytes_2):
     result = byte_array()
     for i in range(len(bytes_1)):
-        result.append(bytes_1[i] ^ bytes_2[i])
+        result.append(xor_byte_byte(bytes_1[i], bytes_2[i]))
 
     return result
 
@@ -48,6 +54,24 @@ def xor_hex_hex(hex_1, hex_2):
     result_bytes = xor_bytes_bytes(bytes_1, bytes_2)
 
     return bytes_to_hex(result_bytes)
+
+def xor_repeating_ascii_key_ascii_to_hex(ascii_key, ascii):
+    key = ascii_to_bytes(ascii_key)
+    bytes = ascii_to_bytes(ascii)
+
+    key_index = 0
+
+    result = byte_array()
+    for byte in bytes:
+        if key_index == len(key):
+            key_index = 0
+
+        key_byte = key[key_index]
+        result.append(xor_byte_byte(key_byte, byte))
+
+        key_index += 1
+
+    return bytes_to_hex(result)
 
 def score_ascii_as_english(ascii):
     english_letter_frequencies = 'zqxjkvbpygfwmucldrhsnioate '
@@ -91,7 +115,7 @@ def crack_xor_byte_hex_to_ascii(hex):
 def assert_equal(expected, actual):
     if actual != expected:
         print('F')
-        print('Expected \'' + expected + '\' but was \'' + actual + '\'')
+        print('Expected \'' + str(expected) + '\' but was \'' + str(actual) + '\'')
     else:
         print('.')
 
@@ -120,3 +144,6 @@ def solve_challenge_4():
         return bytes_to_ascii(
             crack_xor_byte_hex_line_to_bytes(best_line))
 assert_equal('Now that the party is jumping\n', solve_challenge_4())
+
+# Set 1, Challenge 5
+assert_equal('0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f', xor_repeating_ascii_key_ascii_to_hex('ICE', 'Burning \'em, if you ain\'t quick and nimble\nI go crazy when I hear a cymbal'))
