@@ -2,6 +2,7 @@ import array
 import base64
 import binascii
 import itertools
+from Crypto.Cipher import AES
 
 def byte_array():
     return array.array('B')
@@ -115,6 +116,16 @@ def score_ascii_as_english(ascii):
 def score_bytes_as_english(bytes):
     return score_ascii_as_english(bytes_to_ascii(bytes))
 
+def read_base64_content(filename):
+    base64_content = ''
+
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            base64_content += line.rstrip()
+
+    return base64_content
+
 def index_of_max(list):
     return list.index(max(list))
 
@@ -133,6 +144,9 @@ def transpose_blocks(blocks):
             i += 1
 
     return transposed
+
+def decrypt_aes_ecb(key_bytes, bytes):
+    return AES.new(key_bytes, AES.MODE_ECB).decrypt(bytes)
 
 def crack_xor_byte_hex_line_to_bytes(hex_line):
     return crack_xor_byte_hex_to_bytes(hex_line_to_hex(hex_line))
@@ -254,17 +268,24 @@ assert_equal('0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324
 # Set 1, Challenge 6
 assert_equal(37, hamming_distance_ascii_ascii('this is a test', 'wokka wokka!!!'))
 def solve_challenge_6():
-    with open('6.txt', 'r') as f:
-        lines = f.readlines()
-        base64_content = ''
-        for line in lines:
-            base64_content += line.rstrip()
-        bytes = base64_to_bytes(base64_content)
-        key_size = crack_repeating_key_xor_key_size(bytes, 2, 40, 4)
-        key = crack_repeating_key_xor_key(bytes, key_size)
-        decrypted = crack_repeating_key_xor(bytes, key_size)
-        return (bytes_to_ascii(key), bytes_to_ascii(decrypted))
+    base64_content = read_base64_content('6.txt')
+    bytes = base64_to_bytes(base64_content)
+    key_size = crack_repeating_key_xor_key_size(bytes, 2, 40, 4)
+    key = crack_repeating_key_xor_key(bytes, key_size)
+    decrypted = crack_repeating_key_xor(bytes, key_size)
+    return (bytes_to_ascii(key), bytes_to_ascii(decrypted))
  
 challenge_6_solution = solve_challenge_6()
 assert_equal('Terminator X: Bring the noise', challenge_6_solution[0])
 assert_equal('I\'m back and I\'m ringin\' the bell', challenge_6_solution[1][0:33])
+
+# Set 1, Challenge 7
+# Note: Requires PyCrypto (pip install pycrypto)
+def solve_challenge_7():
+    base64_content = read_base64_content('7.txt')
+    bytes = base64_to_bytes(base64_content)
+    key_bytes = ascii_to_bytes('YELLOW SUBMARINE')
+    decrypted = decrypt_aes_ecb(key_bytes, bytes)
+    return bytes_to_ascii(decrypted)
+
+assert_equal('I\'m back and I\'m ringin\' the bell', solve_challenge_7()[0:33])
